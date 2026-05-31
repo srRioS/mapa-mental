@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin — MindMap</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0c0c10;--surface:#14141a;--surface2:#1e1e28;--surface3:#26263200;
+      --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+      --text:#f0eff8;--text2:#9896b0;--text3:#5a5870;
+      --accent:#7f77dd;--accent2:#534ab7;--danger:#c94f4f;--success:#2ecc71;--warn:#d4a017;
+    }
+    html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+    #admin-login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:999}
+    .abox{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:40px;width:340px;display:flex;flex-direction:column;gap:14px;align-items:center}
+    .abox h2{font-family:'Syne',sans-serif;font-size:20px}
+    .abox p{font-size:13px;color:var(--text2);text-align:center}
+    .ainput{width:100%;padding:10px 14px;border-radius:9px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none}
+    .ainput:focus{border-color:var(--accent)}
+    #app{display:none;flex-direction:column;height:100vh}
+    /* TOP BAR */
+    #topbar{display:flex;align-items:center;gap:12px;padding:0 24px;height:56px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+    .topbar-logo{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-right:8px}
+    .topbar-logo span{color:var(--accent)}
+    .nav-tab{padding:6px 14px;border-radius:8px;font-size:13px;color:var(--text2);cursor:pointer;transition:all .15s;border:none;background:transparent;font-family:'DM Sans',sans-serif}
+    .nav-tab:hover{background:var(--surface2);color:var(--text)}
+    .nav-tab.active{background:var(--accent);color:#fff}
+    .spacer{flex:1}
+    .badge{background:var(--accent);color:#fff;font-size:10px;padding:2px 6px;border-radius:10px;margin-left:4px}
+    /* LAYOUT */
+    #content{flex:1;overflow:auto;padding:24px}
+    /* STATS */
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:28px}
+    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:6px}
+    .stat-icon{font-size:22px;margin-bottom:4px}
+    .stat-val{font-family:'Syne',sans-serif;font-size:28px;font-weight:700}
+    .stat-label{font-size:12px;color:var(--text2)}
+    .stat-trend{font-size:11px;color:var(--success)}
+    /* TABLES */
+    .section-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+    .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:24px}
+    .table-toolbar{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)}
+    .tsearch{flex:1;max-width:260px;padding:7px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none}
+    table{width:100%;border-collapse:collapse}
+    th{padding:10px 16px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border)}
+    td{padding:12px 16px;font-size:13px;color:var(--text2);border-bottom:1px solid var(--border)}
+    tr:last-child td{border-bottom:none}
+    tr:hover td{background:var(--surface2)}
+    .tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:500}
+    .tag.active{background:rgba(46,204,113,0.15);color:var(--success)}
+    .tag.inactive{background:rgba(90,88,112,0.2);color:var(--text3)}
+    .tag.admin{background:rgba(127,119,221,0.2);color:var(--accent)}
+    .act-btn{padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;transition:all .12s;font-family:'DM Sans',sans-serif}
+    .act-btn:hover{background:var(--surface2);color:var(--text)}
+    .act-btn.danger{color:var(--danger);border-color:rgba(201,79,79,0.3)}
+    .act-btn.danger:hover{background:rgba(201,79,79,0.1)}
+    /* CHARTS */
+    .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+    .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px}
+    .chart-title{font-size:13px;font-weight:500;color:var(--text2);margin-bottom:16px}
+    .bar-chart{display:flex;flex-direction:column;gap:8px}
+    .bar-row{display:flex;align-items:center;gap:10px;font-size:12px}
+    .bar-label{width:80px;color:var(--text2);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .bar-track{flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden}
+    .bar-fill{height:100%;border-radius:4px;background:var(--accent);transition:width .5s}
+    .bar-count{width:30px;color:var(--text3);font-size:11px}
+    /* IMAGES PANEL */
+    .img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;padding:16px}
+    .img-card{background:var(--surface2);border-radius:10px;overflow:hidden;position:relative;border:1px solid var(--border)}
+    .img-card img{width:100%;height:110px;object-fit:cover;display:block}
+    .img-card-info{padding:8px 10px;font-size:11px;color:var(--text2)}
+    .img-card-del{position:absolute;top:6px;right:6px;width:24px;height:24px;background:rgba(201,79,79,0.85);border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center}
+    /* EMPTY */
+    .empty-state{padding:40px;text-align:center;color:var(--text3);font-size:13px}
+    /* BUTTONS */
+    .btn{padding:7px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+    .btn:hover{background:var(--surface);color:var(--text)}
+    .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+    .btn.primary:hover{background:var(--accent2)}
+    .btn.danger{color:var(--danger);border-color:rgba(201,79,79,0.3)}
+    .btn.danger:hover{background:rgba(201,79,79,0.1)}
+    /* MODAL */
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:500;display:none;align-items:center;justify-content:center}
+    .modal.open{display:flex}
+    .mbox{background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:24px;width:400px;max-width:90%;display:flex;flex-direction:column;gap:14px}
+    .mbox h3{font-family:'Syne',sans-serif;font-size:15px}
+    .mbox label{font-size:12px;color:var(--text2);display:block;margin-bottom:4px}
+    .mbox input,.mbox select{width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none}
+    .mbox input:focus,.mbox select:focus{border-color:var(--accent)}
+    .mrow{display:flex;gap:8px}
+    /* TOAST */
+    #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border2);color:var(--text);font-size:13px;padding:9px 20px;border-radius:30px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:999;white-space:nowrap}
+    #toast.show{opacity:1}
+    ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px}
+  </style>
+</head>
+<body>
+
+<div id="admin-login">
+  <div class="abox">
+    <div style="font-size:36px">🔐</div>
+    <h2>Painel Admin</h2>
+    <p>Entre com seu e-mail de administrador</p>
+    <input class="ainput" id="adm-email" type="email" placeholder="admin@email.com"/>
+    <button class="btn primary" id="adm-login-btn" style="width:100%;justify-content:center"><i class="fa fa-envelope"></i> Enviar Magic Link</button>
+    <div id="adm-sent" style="display:none;font-size:13px;color:#2ecc71;text-align:center">📬 Link enviado! Verifique seu e-mail.</div>
+  </div>
+</div>
+
+<div id="app">
+  <div id="topbar">
+    <span class="topbar-logo">🧠 Mind<span>Map</span> <span style="font-size:11px;color:var(--accent);font-family:'DM Sans';font-weight:400;background:rgba(127,119,221,0.15);padding:2px 8px;border-radius:6px;margin-left:4px">ADMIN</span></span>
+    <button class="nav-tab active" data-tab="dashboard"><i class="fa fa-chart-line"></i> Dashboard</button>
+    <button class="nav-tab" data-tab="users"><i class="fa fa-users"></i> Usuários</button>
+    <button class="nav-tab" data-tab="maps"><i class="fa fa-brain"></i> Mapas</button>
+    <button class="nav-tab" data-tab="images"><i class="fa fa-images"></i> Imagens</button>
+    <div class="spacer"></div>
+    <span id="adm-user-label" style="font-size:12px;color:var(--text3)"></span>
+    <button class="btn" id="adm-logout"><i class="fa fa-right-from-bracket"></i> Sair</button>
+  </div>
+
+  <div id="content">
+    <!-- DASHBOARD -->
+    <div id="tab-dashboard" class="tab-content">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-val" id="st-users">—</div><div class="stat-label">Usuários cadastrados</div></div>
+        <div class="stat-card"><div class="stat-icon">🧠</div><div class="stat-val" id="st-maps">—</div><div class="stat-label">Mapas criados</div></div>
+        <div class="stat-card"><div class="stat-icon">🔵</div><div class="stat-val" id="st-nodes">—</div><div class="stat-label">Nós totais</div></div>
+        <div class="stat-card"><div class="stat-icon">🖼️</div><div class="stat-val" id="st-images">—</div><div class="stat-label">Imagens enviadas</div></div>
+      </div>
+      <div class="charts-grid">
+        <div class="chart-card"><div class="chart-title">Mapas por usuário (top 8)</div><div class="bar-chart" id="chart-maps-user"></div></div>
+        <div class="chart-card"><div class="chart-title">Mapas recentes (últimos 7 dias)</div><div class="bar-chart" id="chart-recent"></div></div>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div id="tab-users" class="tab-content" style="display:none">
+      <div class="table-wrap">
+        <div class="table-toolbar">
+          <span class="section-title" style="margin:0"><i class="fa fa-users"></i> Usuários</span>
+          <input class="tsearch" id="user-search" placeholder="Buscar por e-mail..."/>
+          <button class="btn primary" id="btn-invite"><i class="fa fa-plus"></i> Convidar</button>
+        </div>
+        <table><thead><tr><th>E-mail</th><th>Criado em</th><th>Último acesso</th><th>Mapas</th><th>Ações</th></tr></thead>
+        <tbody id="users-tbody"><tr><td colspan="5" class="empty-state">Carregando...</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- MAPS -->
+    <div id="tab-maps" class="tab-content" style="display:none">
+      <div class="table-wrap">
+        <div class="table-toolbar">
+          <span class="section-title" style="margin:0"><i class="fa fa-brain"></i> Todos os Mapas</span>
+          <input class="tsearch" id="map-search" placeholder="Buscar por título..."/>
+          <button class="btn danger" id="btn-del-all-maps"><i class="fa fa-trash"></i> Excluir selecionados</button>
+        </div>
+        <table><thead><tr><th><input type="checkbox" id="chk-all-maps"/></th><th>Título</th><th>Usuário</th><th>Nós</th><th>Atualizado</th><th>Ações</th></tr></thead>
+        <tbody id="maps-tbody"><tr><td colspan="6" class="empty-state">Carregando...</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- IMAGES -->
+    <div id="tab-images" class="tab-content" style="display:none">
+      <div class="table-wrap">
+        <div class="table-toolbar">
+          <span class="section-title" style="margin:0"><i class="fa fa-images"></i> Imagens enviadas</span>
+          <span id="img-count" style="font-size:12px;color:var(--text3)"></span>
+        </div>
+        <div class="img-grid" id="images-grid"><div class="empty-state">Carregando...</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- INVITE MODAL -->
+<div class="modal" id="invite-modal">
+  <div class="mbox">
+    <h3><i class="fa fa-envelope"></i> Convidar usuário</h3>
+    <div><label>E-mail</label><input id="inv-email" type="email" placeholder="usuario@email.com"/></div>
+    <div class="mrow">
+      <button class="btn primary" id="inv-send" style="flex:1;justify-content:center"><i class="fa fa-paper-plane"></i> Enviar convite</button>
+      <button class="btn" id="inv-cancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

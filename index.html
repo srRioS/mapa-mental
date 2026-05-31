@@ -3,77 +3,156 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mapa Mental</title>
+  <title>MindMap</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="app">
-    <aside id="sidebar">
-      <div class="sidebar-header">
-        <span class="logo">🧠 MindMap</span>
-        <button id="btn-new-map" class="btn-icon" title="Novo mapa"><i class="fa fa-plus"></i></button>
-      </div>
-      <div class="sidebar-section">
-        <span class="section-label">Meus Mapas</span>
-        <div id="maps-list"><p class="empty-msg">Nenhum mapa ainda</p></div>
-      </div>
-    </aside>
-    <main id="main">
-      <header id="topbar">
-        <input id="map-title-input" type="text" placeholder="Nome do mapa..." maxlength="60" />
-        <div class="topbar-actions">
-          <button id="btn-save" class="btn primary"><i class="fa fa-floppy-disk"></i> Salvar</button>
-          <button id="btn-add-child" class="btn"><i class="fa fa-circle-nodes"></i> Filho</button>
-          <button id="btn-add-sibling" class="btn"><i class="fa fa-code-branch"></i> Irmão</button>
-          <button id="btn-delete-node" class="btn danger"><i class="fa fa-trash"></i></button>
-        </div>
-      </header>
-      <div id="canvas-wrap">
-        <svg id="svg" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="rgba(0,0,0,0.18)" />
-            </filter>
-          </defs>
-          <g id="scene"></g>
-        </svg>
-        <div id="ctx-menu">
-          <div class="ctx-item" id="cm-edit"><i class="fa fa-pencil"></i> Editar texto</div>
-          <div class="ctx-item" id="cm-image"><i class="fa fa-image"></i> Adicionar imagem</div>
-          <div class="ctx-item" id="cm-child"><i class="fa fa-plus"></i> Adicionar filho</div>
-          <div class="ctx-item" id="cm-sibling"><i class="fa fa-code-branch"></i> Adicionar irmão</div>
-          <div class="ctx-sep"></div>
-          <div class="ctx-item" id="cm-color"><i class="fa fa-palette"></i> Mudar cor</div>
-          <div class="ctx-item danger" id="cm-del"><i class="fa fa-trash"></i> Excluir nó</div>
-        </div>
-        <div id="edit-box"><input id="edit-input" type="text" placeholder="Texto do nó..." /></div>
-        <input type="file" id="img-input" accept="image/*" style="display:none" />
-        <div id="toast"></div>
-        <div id="zoom-controls">
-          <button id="btn-zoom-in" title="Zoom +"><i class="fa fa-plus"></i></button>
-          <span id="zoom-label">100%</span>
-          <button id="btn-zoom-out" title="Zoom -"><i class="fa fa-minus"></i></button>
-          <button id="btn-zoom-reset" title="Resetar"><i class="fa fa-expand"></i></button>
-        </div>
-      </div>
-    </main>
-    <div id="img-modal" class="modal-overlay" style="display:none">
-      <div class="modal-box">
-        <h3>Imagem do nó</h3>
-        <img id="modal-img" src="" alt="Imagem do nó" />
-        <div class="modal-actions">
-          <button id="modal-change" class="btn"><i class="fa fa-upload"></i> Trocar</button>
-          <button id="modal-remove" class="btn danger"><i class="fa fa-trash"></i> Remover</button>
-          <button id="modal-close" class="btn">Fechar</button>
-        </div>
-      </div>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">🧠</div>
+    <h1 class="login-title">MindMap</h1>
+    <p class="login-sub">Organize suas ideias visualmente</p>
+
+    <div id="login-form">
+      <input id="login-email" type="email" class="login-input" placeholder="seu@email.com" />
+      <button id="btn-magic-login" class="btn-google">
+        <i class="fa fa-envelope"></i> Entrar com Magic Link
+      </button>
+      <p class="login-hint">Você receberá um link no e-mail para entrar — sem senha!</p>
+    </div>
+
+    <div id="login-sent" style="display:none">
+      <div class="login-sent-icon">📬</div>
+      <p class="login-sent-msg">Link enviado!<br/>Verifique seu e-mail e clique no link para entrar.</p>
+      <button id="btn-resend" class="btn" style="margin-top:8px">Reenviar e-mail</button>
     </div>
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js"></script>
-  <script src="app.js"></script>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <span class="logo">🧠 MindMap</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button id="btn-new-map" class="btn-icon" title="Novo mapa"><i class="fa fa-plus"></i></button>
+        <div id="user-avatar" class="avatar" title="Sair"></div>
+      </div>
+    </div>
+    <div class="sidebar-search">
+      <i class="fa fa-search"></i>
+      <input id="search-input" type="text" placeholder="Buscar mapas..." />
+    </div>
+    <div class="sidebar-section">
+      <span class="section-label">Meus Mapas</span>
+      <div id="maps-list"><p class="empty-msg">Nenhum mapa ainda</p></div>
+    </div>
+    <a href="admin.html" class="admin-link"><i class="fa fa-shield-halved"></i> Painel Admin</a>
+  </aside>
+
+  <main id="main">
+    <header id="topbar">
+      <input id="map-title-input" type="text" placeholder="Nome do mapa..." maxlength="60" />
+      <div class="topbar-actions">
+        <button id="btn-save" class="btn primary"><i class="fa fa-floppy-disk"></i> Salvar</button>
+        <button id="btn-add-child" class="btn"><i class="fa fa-circle-nodes"></i> Filho</button>
+        <button id="btn-add-sibling" class="btn"><i class="fa fa-code-branch"></i> Irmão</button>
+        <button id="btn-export" class="btn" title="Exportar como imagem"><i class="fa fa-download"></i></button>
+        <button id="btn-share" class="btn" title="Compartilhar"><i class="fa fa-share-nodes"></i></button>
+        <button id="btn-theme" class="btn" title="Mudar tema"><i class="fa fa-moon"></i></button>
+        <button id="btn-delete-node" class="btn danger"><i class="fa fa-trash"></i></button>
+      </div>
+    </header>
+
+    <div id="canvas-wrap">
+      <svg id="svg" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="2" stdDeviation="5" flood-color="rgba(0,0,0,0.2)" />
+          </filter>
+        </defs>
+        <g id="scene"></g>
+      </svg>
+
+      <div id="ctx-menu">
+        <div class="ctx-item" id="cm-edit"><i class="fa fa-pencil"></i> Editar texto</div>
+        <div class="ctx-item" id="cm-note"><i class="fa fa-note-sticky"></i> Adicionar nota</div>
+        <div class="ctx-item" id="cm-image"><i class="fa fa-image"></i> Adicionar imagem</div>
+        <div class="ctx-item" id="cm-child"><i class="fa fa-plus"></i> Adicionar filho</div>
+        <div class="ctx-item" id="cm-sibling"><i class="fa fa-code-branch"></i> Adicionar irmão</div>
+        <div class="ctx-sep"></div>
+        <div class="ctx-item" id="cm-color"><i class="fa fa-palette"></i> Mudar cor</div>
+        <div class="ctx-item danger" id="cm-del"><i class="fa fa-trash"></i> Excluir nó</div>
+      </div>
+
+      <div id="edit-box"><input id="edit-input" type="text" placeholder="Texto do nó..." /></div>
+      <input type="file" id="img-input" accept="image/*" style="display:none" />
+      <div id="toast"></div>
+
+      <div id="zoom-controls">
+        <button id="btn-zoom-in"><i class="fa fa-plus"></i></button>
+        <span id="zoom-label">100%</span>
+        <button id="btn-zoom-out"><i class="fa fa-minus"></i></button>
+        <button id="btn-zoom-reset"><i class="fa fa-expand"></i></button>
+      </div>
+
+      <div id="shortcuts-hint">
+        <span><kbd>Tab</kbd> filho</span>
+        <span><kbd>Del</kbd> excluir</span>
+        <span><kbd>F2</kbd> editar</span>
+        <span><kbd>Ctrl+S</kbd> salvar</span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- NOTE MODAL -->
+<div id="note-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <h3><i class="fa fa-note-sticky"></i> Nota do nó</h3>
+    <textarea id="note-input" placeholder="Escreva uma nota para este nó..." rows="6"></textarea>
+    <div class="modal-actions">
+      <button id="note-save" class="btn primary">Salvar nota</button>
+      <button id="note-cancel" class="btn">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMAGE MODAL -->
+<div id="img-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <h3><i class="fa fa-image"></i> Imagem do nó</h3>
+    <img id="modal-img" src="" alt="Imagem" />
+    <div class="modal-actions">
+      <button id="modal-change" class="btn"><i class="fa fa-upload"></i> Trocar</button>
+      <button id="modal-remove" class="btn danger"><i class="fa fa-trash"></i> Remover</button>
+      <button id="modal-close" class="btn">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE MODAL -->
+<div id="share-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <h3><i class="fa fa-share-nodes"></i> Compartilhar mapa</h3>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Qualquer pessoa com o link pode visualizar este mapa.</p>
+    <div class="share-link-box">
+      <input id="share-link-input" type="text" readonly />
+      <button id="btn-copy-link" class="btn primary"><i class="fa fa-copy"></i> Copiar</button>
+    </div>
+    <div class="modal-actions" style="margin-top:12px">
+      <button id="share-close" class="btn">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

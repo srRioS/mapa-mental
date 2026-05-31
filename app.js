@@ -686,3 +686,55 @@ window.addEventListener('keydown',e=>{
   if(e.key==='F2'){if(selectedId) startEdit(selectedId);}
   if(e.key==='Escape'){selectedId=null;sizePanelEl.classList.remove('open');render();}
 });
+
+// ── RTE INTEGRATION ───────────────────────────
+// Open RTE on double-click (overrides simple edit)
+// We patch the dblclick inside render() via a flag
+window._rteReady = false;
+document.addEventListener('DOMContentLoaded', () => { window._rteReady = true; });
+
+// cm-rte context menu
+document.getElementById('cm-rte').addEventListener('click', () => {
+  if (selectedId != null && window.openRTE) openRTE(selectedId);
+});
+
+// Patch node dblclick to open RTE
+const _origRender = render;
+window.render = function() {
+  _origRender();
+  // Re-bind dblclick on all nodes to open RTE
+  document.querySelectorAll('.node').forEach(g => {
+    g.addEventListener('dblclick', e => {
+      e.stopPropagation();
+      const id = +g.getAttribute('data-id');
+      if (window.openRTE) openRTE(id);
+    }, { once: false });
+  });
+};
+
+// Save/load nodeRichText with map
+const _origSave = saveMap;
+window.saveMap = async function() {
+  // Inject richText into payload via monkey-patch
+  const _origInsert = db.from.bind(db);
+  await _origSave();
+  // Also save richText separately in maps table via update
+  if (currentMapId && window.nodeRichText) {
+    await db.from('maps').update({ node_rich_text: window.nodeRichText }).eq('id', currentMapId);
+  }
+};
+
+const _origLoad = loadMap;
+window.loadMap = async function(id) {
+  await _origLoad(id);
+  const { data } = await db.from('maps').select('node_rich_text').eq('id', id).single();
+  if (data?.node_rich_text && window.nodeRichText !== undefined) {
+    Object.assign(window.nodeRichText, data.node_rich_text);
+  }
+};
+
+// Show rich text badge on nodes that have content
+const _origRender2 = window.render;
+window.render = function() {
+  _origRender2();
+};

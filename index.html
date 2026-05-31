@@ -102,6 +102,7 @@
       <!-- Context menu -->
       <div id="ctx-menu">
         <div class="ctx-item" id="cm-edit"><i class="fa fa-pencil"></i> Editar texto</div>
+        <div class="ctx-item" id="cm-rte"><i class="fa fa-pen-fancy"></i> Editar conteúdo</div>
         <div class="ctx-item" id="cm-note"><i class="fa fa-note-sticky"></i> Nota</div>
         <div class="ctx-item" id="cm-image"><i class="fa fa-image"></i> Imagem</div>
         <div class="ctx-item" id="cm-child"><i class="fa fa-plus"></i> Filho</div>
@@ -205,8 +206,139 @@
   </div>
 </div>
 
+<!-- RICH TEXT EDITOR MODAL -->
+<div id="rte-modal">
+  <div id="rte-box">
+
+    <!-- RIBBON -->
+    <div id="rte-ribbon">
+      <div class="ribbon-tabs">
+        <div class="ribbon-tab active" data-panel="inicio">Início</div>
+        <div class="ribbon-tab" data-panel="inserir">Inserir</div>
+        <div class="ribbon-tab" data-panel="formatar">Formatar</div>
+        <div class="ribbon-tab" data-panel="tabela">Tabela</div>
+      </div>
+
+      <!-- INÍCIO -->
+      <div class="ribbon-panel active" id="panel-inicio">
+        <button class="rb rb-bold" title="Negrito (Ctrl+B)" data-cmd="bold"><b>N</b></button>
+        <button class="rb rb-italic" title="Itálico (Ctrl+I)" data-cmd="italic"><i>I</i></button>
+        <button class="rb" title="Sublinhado (Ctrl+U)" data-cmd="underline"><u>S</u></button>
+        <button class="rb" title="Tachado" data-cmd="strikeThrough"><s>T</s></button>
+        <div class="ribbon-sep"></div>
+        <select class="rb" id="rte-font-size" title="Tamanho">
+          <option value="1">8</option><option value="2">10</option><option value="3" selected>12</option><option value="4">14</option><option value="5">18</option><option value="6">24</option><option value="7">36</option>
+        </select>
+        <select class="rb" id="rte-font-face" title="Fonte">
+          <option value="DM Sans">DM Sans</option><option value="Syne">Syne</option><option value="Georgia">Georgia</option><option value="monospace">Monospace</option><option value="Arial">Arial</option>
+        </select>
+        <div class="ribbon-sep"></div>
+        <label title="Cor do texto"><input type="color" id="rte-color" value="#f0eff8"/></label>
+        <label title="Marca-texto"><input type="color" id="rte-bg-color" value="#7f77dd"/></label>
+        <button class="rb" id="rte-clear-format" title="Limpar formatação"><i class="fa fa-eraser"></i></button>
+        <div class="ribbon-sep"></div>
+        <button class="rb" title="Alinhar esquerda" data-cmd="justifyLeft"><i class="fa fa-align-left"></i></button>
+        <button class="rb" title="Centralizar" data-cmd="justifyCenter"><i class="fa fa-align-center"></i></button>
+        <button class="rb" title="Alinhar direita" data-cmd="justifyRight"><i class="fa fa-align-right"></i></button>
+        <button class="rb" title="Justificar" data-cmd="justifyFull"><i class="fa fa-align-justify"></i></button>
+      </div>
+
+      <!-- INSERIR -->
+      <div class="ribbon-panel" id="panel-inserir">
+        <button class="rb" id="rte-link-btn" title="Inserir link (Ctrl+K)"><i class="fa fa-link"></i> Link</button>
+        <button class="rb" id="rte-img-btn" title="Inserir imagem"><i class="fa fa-image"></i> Imagem</button>
+        <button class="rb" id="rte-pdf-btn" title="Anexar PDF"><i class="fa fa-file-pdf"></i> PDF</button>
+        <button class="rb" id="rte-file-btn" title="Anexar arquivo"><i class="fa fa-paperclip"></i> Arquivo</button>
+        <div class="ribbon-sep"></div>
+        <button class="rb" data-cmd="insertUnorderedList" title="Lista com marcadores"><i class="fa fa-list-ul"></i> Lista</button>
+        <button class="rb" data-cmd="insertOrderedList" title="Lista numerada"><i class="fa fa-list-ol"></i> Numerada</button>
+        <button class="rb" id="rte-quote" title="Citação"><i class="fa fa-quote-left"></i> Citação</button>
+        <button class="rb" id="rte-code-btn" title="Código inline"><i class="fa fa-code"></i> Código</button>
+        <button class="rb" id="rte-hr" title="Linha horizontal"><i class="fa fa-minus"></i> Linha</button>
+        <div class="ribbon-sep"></div>
+        <button class="rb" id="rte-emoji" title="Emoji">😀 Emoji</button>
+      </div>
+
+      <!-- FORMATAR -->
+      <div class="ribbon-panel" id="panel-formatar">
+        <button class="rb" data-cmd="formatBlock" data-val="h1" title="Título 1"><b>H1</b></button>
+        <button class="rb" data-cmd="formatBlock" data-val="h2" title="Título 2"><b>H2</b></button>
+        <button class="rb" data-cmd="formatBlock" data-val="h3" title="Título 3"><b>H3</b></button>
+        <button class="rb" data-cmd="formatBlock" data-val="p" title="Parágrafo"><i class="fa fa-paragraph"></i></button>
+        <div class="ribbon-sep"></div>
+        <button class="rb" data-cmd="superscript" title="Sobrescrito">X²</button>
+        <button class="rb" data-cmd="subscript" title="Subscrito">X₂</button>
+        <div class="ribbon-sep"></div>
+        <div style="display:flex;flex-wrap:wrap;gap:3px;max-width:180px">
+          <div class="color-swatch" style="background:#7f77dd" title="Roxo" data-color="#7f77dd"></div>
+          <div class="color-swatch" style="background:#2ecc71" title="Verde" data-color="#2ecc71"></div>
+          <div class="color-swatch" style="background:#e05555" title="Vermelho" data-color="#e05555"></div>
+          <div class="color-swatch" style="background:#4a9edd" title="Azul" data-color="#4a9edd"></div>
+          <div class="color-swatch" style="background:#d4a017" title="Amarelo" data-color="#d4a017"></div>
+          <div class="color-swatch" style="background:#c060d0" title="Magenta" data-color="#c060d0"></div>
+          <div class="color-swatch" style="background:#50b870" title="Verde claro" data-color="#50b870"></div>
+          <div class="color-swatch" style="background:#f0eff8" title="Branco" data-color="#f0eff8"></div>
+        </div>
+      </div>
+
+      <!-- TABELA -->
+      <div class="ribbon-panel" id="panel-tabela">
+        <button class="rb" id="rte-table-btn" title="Inserir tabela"><i class="fa fa-table"></i> Inserir tabela</button>
+        <div class="ribbon-sep"></div>
+        <span style="font-size:12px;color:var(--text2)">Linhas:</span>
+        <input type="number" id="tbl-rows" min="1" max="20" value="3" style="width:48px;padding:4px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;outline:none"/>
+        <span style="font-size:12px;color:var(--text2)">Colunas:</span>
+        <input type="number" id="tbl-cols" min="1" max="10" value="3" style="width:48px;padding:4px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;outline:none"/>
+      </div>
+    </div>
+
+    <!-- TITLE -->
+    <input id="rte-title-input" type="text" placeholder="Título do nó..." maxlength="80"/>
+
+    <!-- EDITOR -->
+    <div id="rte-editor" contenteditable="true" data-placeholder="Escreva o conteúdo do nó..."></div>
+
+    <!-- ATTACHMENTS -->
+    <div id="rte-attachments"></div>
+
+    <!-- STATUS -->
+    <div id="rte-status">
+      <span id="rte-words"><i class="fa fa-file-word"></i> 0 palavras</span>
+      <span id="rte-chars"><i class="fa fa-font"></i> 0 chars</span>
+      <div style="flex:1"></div>
+      <span style="font-size:10px;color:var(--text3)">Ctrl+B Negrito · Ctrl+I Itálico · Ctrl+K Link · Ctrl+Z Desfazer</span>
+    </div>
+
+    <!-- BOTTOM -->
+    <div id="rte-bottom">
+      <button class="btn primary" id="rte-save"><i class="fa fa-check"></i> Aplicar</button>
+      <button class="btn" id="rte-cancel">Cancelar</button>
+      <div style="flex:1"></div>
+      <button class="btn" id="rte-undo" title="Desfazer"><i class="fa fa-rotate-left"></i></button>
+      <button class="btn" id="rte-redo" title="Refazer"><i class="fa fa-rotate-right"></i></button>
+    </div>
+  </div>
+</div>
+
+<!-- LINK DIALOG -->
+<div id="link-dialog">
+  <div style="font-size:12px;font-weight:600;color:var(--text)">Inserir link</div>
+  <input id="link-text" placeholder="Texto do link"/>
+  <input id="link-url" placeholder="https://..." type="url"/>
+  <div style="display:flex;gap:6px">
+    <button class="btn primary" id="link-ok" style="flex:1;justify-content:center"><i class="fa fa-check"></i> Inserir</button>
+    <button class="btn" id="link-cancel">Cancelar</button>
+  </div>
+</div>
+
+<!-- Hidden file inputs -->
+<input type="file" id="rte-img-input" accept="image/*" style="display:none"/>
+<input type="file" id="rte-pdf-input" accept="application/pdf" style="display:none"/>
+<input type="file" id="rte-any-input" style="display:none"/>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
+  <script src="rte.js" defer></script>
 <script src="app.js"></script>
 </body>
 </html>

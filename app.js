@@ -26,7 +26,7 @@ let nodes=[], edges=[], nextId=1, selectedId=null;
 let pan={x:0,y:0}, zoom=1;
 let dragging=false, dragStart={}, panStart={};
 let nodeDrag=null, nodeDragOffset={};
-let currentMapId=null, nodeNotes={};
+let currentMapId=null, nodeImages={}, nodeNotes={};
 let currentUser=null, isLight=false;
 let appInitialized=false;
 let nodeRadius = {}; // per-node border radius override
@@ -40,6 +40,9 @@ const editInput   = document.getElementById('edit-input');
 const toastEl     = document.getElementById('toast');
 const mapTitleIn  = document.getElementById('map-title-input');
 const mapsList    = document.getElementById('maps-list');
+const imgInput    = document.getElementById('img-input');
+const imgModal    = document.getElementById('img-modal');
+const modalImg    = document.getElementById('modal-img');
 const zoomLabel   = document.getElementById('zoom-label');
 const searchInput = document.getElementById('search-input');
 const actionMenu  = document.getElementById('action-menu');
@@ -233,8 +236,11 @@ function render(){
   // Nodes
   nodes.forEach(n=>{
     const col=getColors(n.colorIdx);
+    const imgUrl=nodeImages[String(n.id)];
+    const hasImg=!!imgUrl;
     const hasNote=!!(nodeNotes[String(n.id)]);
     const rx=getNodeRadius(n);
+    const nodeH=hasImg?Math.max(n.h,90):n.h;
 
     const g=document.createElementNS('http://www.w3.org/2000/svg','g');
     g.setAttribute('class','node'+(n.id===selectedId?' selected':''));
@@ -244,7 +250,7 @@ function render(){
     const rect=document.createElementNS('http://www.w3.org/2000/svg','rect');
     rect.setAttribute('class','node-rect');
     rect.setAttribute('x',n.x); rect.setAttribute('y',n.y);
-    rect.setAttribute('width',n.w); rect.setAttribute('height',n.h);
+    rect.setAttribute('width',n.w); rect.setAttribute('height',nodeH);
     rect.setAttribute('rx',rx);
     rect.setAttribute('fill',col.fill);
     rect.setAttribute('stroke',col.stroke);
@@ -253,8 +259,29 @@ function render(){
     rect.setAttribute('opacity',n.id===selectedId?'1':'0.88');
     g.appendChild(rect);
 
+    // Image
+    if(hasImg){
+      const clipId='clip-'+n.id;
+      const defs=document.createElementNS('http://www.w3.org/2000/svg','defs');
+      const clip=document.createElementNS('http://www.w3.org/2000/svg','clipPath');
+      clip.setAttribute('id',clipId);
+      const cr=document.createElementNS('http://www.w3.org/2000/svg','rect');
+      const imgH=nodeH-n.h-4; const actualImgH=Math.max(imgH,50);
+      cr.setAttribute('x',n.x+4); cr.setAttribute('y',n.y+4);
+      cr.setAttribute('width',n.w-8); cr.setAttribute('height',actualImgH);
+      cr.setAttribute('rx',Math.max(rx-3,4));
+      clip.appendChild(cr); defs.appendChild(clip); scene.appendChild(defs);
+      const imgEl=document.createElementNS('http://www.w3.org/2000/svg','image');
+      imgEl.setAttribute('href',imgUrl);
+      imgEl.setAttribute('x',n.x+4); imgEl.setAttribute('y',n.y+4);
+      imgEl.setAttribute('width',n.w-8); imgEl.setAttribute('height',actualImgH);
+      imgEl.setAttribute('preserveAspectRatio','xMidYMid slice');
+      imgEl.setAttribute('clip-path',`url(#${clipId})`);
+      g.appendChild(imgEl);
+    }
+
     // Label
-    const textY=n.y+n.h/2+5;
+    const textY=hasImg?n.y+nodeH-10:n.y+n.h/2+5;
     const text=document.createElementNS('http://www.w3.org/2000/svg','text');
     text.setAttribute('x',n.x+n.w/2); text.setAttribute('y',textY);
     text.setAttribute('text-anchor','middle');
@@ -285,7 +312,7 @@ function render(){
     if(n.id===selectedId){
       const rh=document.createElementNS('http://www.w3.org/2000/svg','rect');
       rh.setAttribute('class','resize-handle');
-      rh.setAttribute('x',n.x+n.w-10); rh.setAttribute('y',n.y+n.h-10);
+      rh.setAttribute('x',n.x+n.w-10); rh.setAttribute('y',n.y+nodeH-10);
       rh.setAttribute('width',10); rh.setAttribute('height',10);
       rh.setAttribute('rx',2); rh.setAttribute('fill',col.stroke);
       rh.setAttribute('cursor','se-resize');
@@ -295,7 +322,7 @@ function render(){
 
     g.addEventListener('mousedown',e=>{e.stopPropagation();onNodeMouseDown(e,n.id);});
     g.addEventListener('contextmenu',e=>{e.preventDefault();e.stopPropagation();selectNode(n.id);showCtxMenu(e.clientX,e.clientY);});
-    g.addEventListener('dblclick',e=>{e.stopPropagation();if (window.openRTE) openRTE(n.id);});
+    g.addEventListener('dblclick',e=>{e.stopPropagation();startEdit(n.id);});
     // Touch long-press for context menu
     let longPressT;
     g.addEventListener('touchstart',e=>{
@@ -327,19 +354,19 @@ function addChild(parentId){
   const siblings=nodes.filter(n=>n.parentId===parentId);
   const ci=(p.colorIdx+1+siblings.length)%COLORS.length;
   const child=makeNode(p.x+p.w+80,p.y+siblings.length*62,'Nova ideia',parentId,ci);
-  nodes.push(child);rebuildEdges();selectedId=child.id;render();if(window.openRTE) { setTimeout(() => openRTE(child.id), 100); }
+  nodes.push(child);rebuildEdges();selectedId=child.id;render();startEdit(child.id);
 }
 function addSibling(id){
   const n=nodes.find(x=>x.id===id);if(!n) return;
   const ci=(n.colorIdx+2)%COLORS.length;
   const sib=makeNode(n.x,n.y+62,'Nova ideia',n.parentId,ci);
-  nodes.push(sib);rebuildEdges();selectedId=sib.id;render();if(window.openRTE) { setTimeout(() => openRTE(sib.id), 100); }
+  nodes.push(sib);rebuildEdges();selectedId=sib.id;render();startEdit(sib.id);
 }
 function deleteNode(id){
   if(nodes.length<=1){showToast('Não é possível excluir o único nó');return;}
   if(nodes[0]&&id===nodes[0].id){showToast('Não é possível excluir o nó raiz');return;}
   const sub=getSubtree(id);
-  sub.forEach(sid=>{delete nodeNotes[String(sid)];delete nodeRadius[String(sid)];});
+  sub.forEach(sid=>{delete nodeImages[String(sid)];delete nodeNotes[String(sid)];delete nodeRadius[String(sid)];});
   nodes=nodes.filter(n=>!sub.includes(n.id));
   if(selectedId&&sub.includes(selectedId)) selectedId=null;
   rebuildEdges();render();
@@ -456,7 +483,7 @@ function showCtxMenu(cx,cy){
   ctxMenu.style.left=x+'px';ctxMenu.style.top=y+'px';ctxMenu.style.display='block';
 }
 document.addEventListener('click',()=>ctxMenu.style.display='none');
-document.getElementById('cm-edit').addEventListener('click',()=>{if(selectedId && window.openRTE) openRTE(selectedId);});
+document.getElementById('cm-edit').addEventListener('click',()=>{if(selectedId) startEdit(selectedId);});
 document.getElementById('cm-child').addEventListener('click',()=>{if(selectedId) addChild(selectedId);});
 document.getElementById('cm-sibling').addEventListener('click',()=>{if(selectedId) addSibling(selectedId);});
 document.getElementById('cm-del').addEventListener('click',()=>{if(selectedId) deleteNode(selectedId);});
@@ -473,6 +500,64 @@ document.getElementById('note-save').addEventListener('click',()=>{
   noteModal.style.display='none'; render(); showToast('Nota salva ✓','ok');
 });
 document.getElementById('note-cancel').addEventListener('click',()=>noteModal.style.display='none');
+document.getElementById('cm-image').addEventListener('click',()=>{
+  if(!selectedId) return;
+  const ex=nodeImages[String(selectedId)];
+  if(ex){modalImg.src=ex;imgModal.style.display='flex';imgModal.dataset.nodeId=selectedId;}
+  else{imgInput.dataset.nodeId=selectedId;imgInput.click();}
+});
+
+// ── IMAGE UPLOAD ──────────────────────────────
+imgInput.addEventListener('change',async()=>{
+  const file=imgInput.files[0], nodeId=imgInput.dataset.nodeId;
+  if(!file||!nodeId) return;
+  if(!currentMapId){showToast('Salve o mapa primeiro!','error');return;}
+  await uploadImageToNode(file,String(nodeId));
+  imgInput.value='';
+});
+document.getElementById('modal-close').addEventListener('click',()=>imgModal.style.display='none');
+document.getElementById('modal-change').addEventListener('click',()=>{imgInput.dataset.nodeId=imgModal.dataset.nodeId;imgInput.click();imgModal.style.display='none';});
+document.getElementById('modal-remove').addEventListener('click',async()=>{
+  const nodeId=imgModal.dataset.nodeId;
+  await db.from('node_images').delete().eq('map_id',currentMapId).eq('node_id',String(nodeId));
+  delete nodeImages[String(nodeId)]; imgModal.style.display='none'; render(); showToast('Imagem removida');
+});
+
+// Drag & drop image onto canvas
+const imgHint=document.getElementById('img-hint');
+canvasWrap.addEventListener('dragover',e=>{e.preventDefault();canvasWrap.classList.add('drag-over');imgHint.classList.add('show');});
+canvasWrap.addEventListener('dragleave',()=>{canvasWrap.classList.remove('drag-over');imgHint.classList.remove('show');});
+canvasWrap.addEventListener('drop',async e=>{
+  e.preventDefault();canvasWrap.classList.remove('drag-over');imgHint.classList.remove('show');
+  const file=e.dataTransfer.files[0];
+  if(!file||!file.type.startsWith('image/')){showToast('Solte uma imagem válida','error');return;}
+  const rect=canvasWrap.getBoundingClientRect();
+  const mx=(e.clientX-rect.left-pan.x)/zoom, my=(e.clientY-rect.top-pan.y)/zoom;
+  const target=nodes.find(n=>mx>=n.x&&mx<=n.x+n.w&&my>=n.y&&my<=n.y+n.h+50);
+  if(!target){
+    if(!currentMapId){showToast('Salve o mapa primeiro!','error');return;}
+    const nn=makeNode(mx-70,my-21,'Imagem',null,nodes.length%COLORS.length);
+    nodes.push(nn);rebuildEdges();selectedId=nn.id;render();
+    await uploadImageToNode(file,String(nn.id));return;
+  }
+  selectedId=target.id;render();
+  if(!currentMapId){showToast('Salve o mapa primeiro!','error');return;}
+  await uploadImageToNode(file,String(target.id));
+});
+
+async function uploadImageToNode(file,nodeId){
+  if(!currentMapId){showToast('Salve o mapa primeiro!','error');return;}
+  if(!currentUser){showToast('Faça login para enviar imagens','error');return;}
+  showToast('Enviando imagem...');
+  const ext=file.name.split('.').pop();
+  const path = `${currentUser.id}/${currentMapId}/${nodeId}_${Date.now()}.${ext}`;
+  const{error}=await db.storage.from('node-images').upload(path,file,{upsert:true});
+  if(error){showToast('Erro ao enviar','error');console.error(error);return;}
+  const{data}=db.storage.from('node-images').getPublicUrl(path);
+  await db.from('node_images').upsert({map_id:currentMapId,node_id:nodeId,url:data.publicUrl},{onConflict:'map_id,node_id'});
+  nodeImages[nodeId]=data.publicUrl;
+  showToast('Imagem adicionada! ✓','ok');render();
+}
 
 // ── EXPORT ────────────────────────────────────
 document.getElementById('btn-export').addEventListener('click',async()=>{
@@ -634,7 +719,7 @@ async function saveMap(){
   // Only include optional JSON columns if they have content — avoids DB errors
   if (nodeNotes && Object.keys(nodeNotes).length) payload.node_notes = nodeNotes;
   if (nodeRadius && Object.keys(nodeRadius).length) payload.node_radius = nodeRadius;
-  if (window.nodeText && Object.keys(window.nodeText).length) payload.node_text = window.nodeText;
+  if (window.nodeRichText && Object.keys(window.nodeRichText).length) payload.node_rich_text = window.nodeRichText;
 
   if(currentMapId){
     const { error } = await db.from('maps').update({...payload,updated_at:new Date().toISOString()}).eq('id',currentMapId).eq('user_id',currentUser.id);
@@ -642,7 +727,7 @@ async function saveMap(){
       const msg = error.message || error.details || JSON.stringify(error);
       showToast('Erro ao salvar: '+msg,'error');
       console.error('saveMap update error', error);
-      return false;
+      return;
     }
   } else {
     const{data,error}=await db.from('maps').insert(payload).select().single();
@@ -650,13 +735,11 @@ async function saveMap(){
       const msg = error.message || error.details || JSON.stringify(error);
       showToast('Erro ao salvar: '+msg,'error');
       console.error('saveMap insert error', error);
-      return false;
+      return;
     }
     currentMapId=data.id;
   }
-  showToast('Mapa salvo ✓','ok');
-  loadMapsList();
-  return true;
+  showToast('Mapa salvo ✓','ok');loadMapsList();
 }
 async function loadMap(id){
   if(!currentUser){showToast('Faça login para carregar o mapa','error');return;}
@@ -668,12 +751,15 @@ async function loadMap(id){
   nodes=data.nodes||[];edges=data.edges||[];nextId=data.next_id||(nodes.length+1);
   pan={x:data.pan_x||300,y:data.pan_y||200};currentMapId=id;selectedId=null;
   mapTitleIn.value=data.title||'';nodeNotes=data.node_notes||{};nodeRadius=data.node_radius||{};
-  const textData = data.node_text || {};
-  if (window.nodeText !== undefined) {
-    Object.assign(window.nodeText, textData);
+  const richTextData = data.node_rich_text || {};
+  if (window.nodeRichText !== undefined) {
+    Object.assign(window.nodeRichText, richTextData);
   } else {
-    window.nodeText = textData;
+    window.nodeRichText = richTextData;
   }
+  nodeImages={};
+  const{data:imgs}=await db.from('node_images').select('*').eq('map_id',id);
+  if(imgs) imgs.forEach(img=>{nodeImages[img.node_id]=img.url;});
   zoom=1;zoomLabel.textContent='100%';render();loadMapsList();
   sidebar.classList.remove('open');sidebarOverlay.classList.remove('show');
   showToast('Mapa carregado');
@@ -704,10 +790,11 @@ async function loadMapsList(filter=''){
   });
 }
 function initNewMap(){
-  nodes=[];edges=[];nextId=1;selectedId=null;nodeNotes={};nodeRadius={};currentMapId=null;
+  nodes=[];edges=[];nextId=1;selectedId=null;nodeImages={};nodeNotes={};nodeRadius={};currentMapId=null;
   mapTitleIn.value='';pan={x:300,y:200};zoom=1;zoomLabel.textContent='100%';
   nodes.push(makeNode(-70,-20,'Ideia Central',null,0));rebuildEdges();render();
 }
+document.getElementById('btn-save').addEventListener('click',saveMap);
 document.getElementById('btn-save-all')?.addEventListener('click',saveMap);
 document.getElementById('btn-new-map').addEventListener('click',()=>{initNewMap();showToast('Novo mapa criado');});
 
@@ -717,7 +804,7 @@ window.addEventListener('keydown',e=>{
   if(e.key==='Delete'||e.key==='Backspace'){if(selectedId) deleteNode(selectedId);}
   if(e.key==='Tab'){e.preventDefault();if(selectedId) addChild(selectedId);}
   if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();saveMap();}
-  if(e.key==='F2'){if(selectedId && window.openRTE) openRTE(selectedId);}
+  if(e.key==='F2'){if(selectedId) startEdit(selectedId);}
   if(e.key==='Escape'){selectedId=null;sizePanelEl.classList.remove('open');render();}
 });
 
@@ -726,6 +813,11 @@ window.addEventListener('keydown',e=>{
 // We patch the dblclick inside render() via a flag
 window._rteReady = false;
 document.addEventListener('DOMContentLoaded', () => { window._rteReady = true; });
+
+// cm-rte context menu
+document.getElementById('cm-rte').addEventListener('click', () => {
+  if (selectedId != null && window.openRTE) openRTE(selectedId);
+});
 
 // Patch node dblclick to open RTE
 const _origRender = render;

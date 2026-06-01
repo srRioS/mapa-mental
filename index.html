@@ -76,6 +76,7 @@
     <button id="btn-action-menu" class="btn-icon" title="Menu de ações"><i class="fa fa-list"></i></button>
       <input id="map-title-input" type="text" placeholder="Nome do mapa..." maxlength="60"/>
       <div class="topbar-actions">
+        <button id="btn-save" class="btn primary"><i class="fa fa-floppy-disk"></i><span class="btn-label"> Salvar</span></button>
         <button id="btn-save-all" class="btn primary big-save" title="Salvar tudo"><i class="fa fa-floppy-disk"></i><span class="btn-label"> Salvar tudo</span></button>
         <button id="btn-add-child" class="btn"><i class="fa fa-circle-nodes"></i><span class="btn-label"> Filho</span></button>
         <button id="btn-add-sibling" class="btn"><i class="fa fa-code-branch"></i><span class="btn-label"> Irmão</span></button>
@@ -116,6 +117,7 @@
       <!-- Context menu -->
       <div id="ctx-menu">
         <div class="ctx-item" id="cm-edit"><i class="fa fa-pencil"></i> Editar texto</div>
+        <div class="ctx-item" id="cm-rte"><i class="fa fa-pen-fancy"></i> Editar conteúdo</div>
         <div class="ctx-item" id="cm-note"><i class="fa fa-note-sticky"></i> Nota</div>
         <div class="ctx-item" id="cm-image"><i class="fa fa-image"></i> Imagem</div>
         <div class="ctx-item" id="cm-child"><i class="fa fa-plus"></i> Filho</div>
@@ -306,10 +308,10 @@
     </div>
 
     <!-- TITLE -->
-    <input id="rte-title-input" type="text" placeholder="(Opcional) Nome do nó..." maxlength="80"/>
+    <input id="rte-title-input" type="text" placeholder="Título do nó..." maxlength="80"/>
 
     <!-- EDITOR -->
-    <div id="rte-editor" contenteditable="true" data-placeholder="✍️ Comece a escrever aqui..."></div>
+    <div id="rte-editor" contenteditable="true" data-placeholder="Escreva o conteúdo do nó..."></div>
 
     <!-- ATTACHMENTS -->
     <div id="rte-attachments"></div>
@@ -324,7 +326,8 @@
 
     <!-- BOTTOM -->
     <div id="rte-bottom">
-      <button class="btn primary" id="rte-save"><i class="fa fa-check"></i> Salvar</button>
+      <button class="btn primary" id="rte-save-format"><i class="fa fa-floppy-disk"></i> Salvar formatações</button>
+      <button class="btn primary" id="rte-save"><i class="fa fa-check"></i> Aplicar</button>
       <button class="btn" id="rte-cancel">Cancelar</button>
       <div style="flex:1"></div>
       <button class="btn" id="rte-undo" title="Desfazer"><i class="fa fa-rotate-left"></i></button>

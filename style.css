@@ -122,6 +122,12 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
 .btn-icon{width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all var(--transition);flex-shrink:0;font-family:'DM Sans',sans-serif}
 .btn-icon:hover{background:var(--surface2);color:var(--text)}
 .btn-icon:active{transform:scale(0.93)}
+.action-menu{position:absolute;top:62px;left:14px;width:240px;background:var(--surface);border:1px solid var(--border2);border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,0.25);overflow:hidden;opacity:0;pointer-events:none;transform:translateY(-8px);transition:opacity .18s ease,transform .18s ease}
+.action-menu.open{opacity:1;pointer-events:auto;transform:translateY(0)}
+.action-menu .menu-header{padding:12px 14px;font-size:13px;font-weight:700;color:var(--text);border-bottom:1px solid var(--border2);background:rgba(255,255,255,0.03)}
+.action-menu .menu-item{width:100%;display:flex;align-items:center;gap:10px;padding:12px 14px;border:none;background:transparent;color:var(--text);font-size:13px;text-align:left;cursor:pointer;transition:background .15s}
+.action-menu .menu-item:hover{background:var(--surface2)}
+.action-menu .menu-item.danger{color:var(--danger)}
 .btn{padding:7px 13px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all var(--transition);white-space:nowrap;user-select:none}
 .btn:hover{background:var(--surface3);color:var(--text)}
 .btn:active{transform:scale(0.96)}

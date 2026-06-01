@@ -250,6 +250,7 @@ async function handleAttachment(file) {
   if (!file) return;
   if (!currentMapId) { showToast('Salve o mapa primeiro!', 'error'); return; }
   showToast('Enviando arquivo...');
+  if(!currentUser){ showToast('Faça login para anexar arquivos','error'); return; }
   const ext  = file.name.split('.').pop();
   const path = `${currentUser.id}/${currentMapId}/attach_${Date.now()}.${ext}`;
   const { error } = await db.storage.from('node-images').upload(path, file, { upsert: true });

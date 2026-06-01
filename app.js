@@ -28,9 +28,7 @@ let dragging=false, dragStart={}, panStart={};
 let nodeDrag=null, nodeDragOffset={};
 let currentMapId=null, nodeImages={}, nodeNotes={};
 let currentUser=null, isLight=false;
-// Anonymous token to allow saving maps to Supabase without login
-let anonToken = localStorage.getItem('anon_token') || null;
-if(!anonToken){ anonToken = 'anon_'+Math.random().toString(36).slice(2,12); localStorage.setItem('anon_token', anonToken); }
+let appInitialized=false;
 let nodeRadius = {}; // per-node border radius override
 
 // ── DOM ───────────────────────────────────────
@@ -137,22 +135,54 @@ document.getElementById('su-pass2').addEventListener('keydown',e=>{if(e.key==='E
 
 // Sign Out
 document.getElementById('user-avatar').addEventListener('click',async()=>{
-  if(confirm('Deseja sair da conta?')){await db.auth.signOut();location.reload();}
+  if(currentUser){
+    if(confirm('Deseja sair da conta?')){await db.auth.signOut();location.reload();}
+  } else {
+    document.getElementById('login-screen').style.display='flex';
+    document.getElementById('app').style.display='none';
+  }
 });
+
+async function initAuth(){
+  const { data } = await db.auth.getSession();
+  const session = data?.session;
+  if(session?.user){
+    currentUser = session.user;
+    initApp();
+  } else {
+    document.getElementById('login-screen').style.display='flex';
+    document.getElementById('app').style.display='none';
+  }
+}
 
 // Auth state
 db.auth.onAuthStateChange(async(event,session)=>{
   if(session?.user){
     currentUser=session.user;
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('app').style.display='flex';
-    const av=document.getElementById('user-avatar');
-    av.textContent=(currentUser.email||'U')[0].toUpperCase();
-    av.title=`${currentUser.email} — clique para sair`;
-    initNewMap();
-    loadMapsList();
+    initApp();
+  } else {
+    currentUser=null;
+    document.getElementById('login-screen').style.display='flex';
+    document.getElementById('app').style.display='none';
   }
 });
+
+function initApp(){
+  const loginScreen = document.getElementById('login-screen');
+  const appScreen = document.getElementById('app');
+  loginScreen.style.display='none';
+  appScreen.style.display='flex';
+  if(!appInitialized){
+    appInitialized=true;
+    initNewMap();
+  }
+  const av=document.getElementById('user-avatar');
+  av.textContent=(currentUser.email||'U')[0].toUpperCase();
+  av.title=`${currentUser.email} — clique para sair`;
+  loadMapsList();
+}
+
+initAuth();
 
 // ── SIDEBAR TOGGLE (mobile) ───────────────────
 const sidebar=document.getElementById('sidebar');
@@ -506,10 +536,10 @@ canvasWrap.addEventListener('drop',async e=>{
 
 async function uploadImageToNode(file,nodeId){
   if(!currentMapId){showToast('Salve o mapa primeiro!','error');return;}
+  if(!currentUser){showToast('Faça login para enviar imagens','error');return;}
   showToast('Enviando imagem...');
   const ext=file.name.split('.').pop();
-  const owner = currentUser ? currentUser.id : anonToken;
-  const path = `${owner}/${currentMapId}/${nodeId}_${Date.now()}.${ext}`;
+  const path = `${currentUser.id}/${currentMapId}/${nodeId}_${Date.now()}.${ext}`;
   const{error}=await db.storage.from('node-images').upload(path,file,{upsert:true});
   if(error){showToast('Erro ao enviar','error');console.error(error);return;}
   const{data}=db.storage.from('node-images').getPublicUrl(path);
@@ -658,16 +688,17 @@ function handleActionMenu(action){
 
 // ── SAVE / LOAD ───────────────────────────────
 async function saveMap(){
+  if(!currentUser){
+    showToast('Faça login para salvar o mapa','error');
+    document.getElementById('login-screen').style.display='flex';
+    document.getElementById('app').style.display='none';
+    return;
+  }
   const title=mapTitleIn.value.trim()||'Sem título';
-  const payload={title,nodes,edges,next_id:nextId,pan_x:pan.x,pan_y:pan.y,node_notes:nodeNotes,node_radius:nodeRadius,user_id: currentUser? currentUser.id : null, anon_token: currentUser? null : anonToken};
+  const payload={title,nodes,edges,next_id:nextId,pan_x:pan.x,pan_y:pan.y,node_notes:nodeNotes,node_radius:nodeRadius,user_id: currentUser.id};
   if(currentMapId){
-    let res;
-    if(currentUser){
-      res = await db.from('maps').update({...payload,updated_at:new Date().toISOString()}).eq('id',currentMapId).eq('user_id',currentUser.id);
-    } else {
-      res = await db.from('maps').update({...payload,updated_at:new Date().toISOString()}).eq('id',currentMapId).eq('anon_token',anonToken);
-    }
-    if(res.error){showToast('Erro ao salvar','error');console.error(res.error);return;}
+    const { error } = await db.from('maps').update({...payload,updated_at:new Date().toISOString()}).eq('id',currentMapId).eq('user_id',currentUser.id);
+    if(error){showToast('Erro ao salvar','error');console.error(error);return;}
   } else {
     const{data,error}=await db.from('maps').insert(payload).select().single();
     if(error){showToast('Erro ao salvar','error');console.error(error);return;}
@@ -676,7 +707,8 @@ async function saveMap(){
   showToast('Mapa salvo ✓','ok');loadMapsList();
 }
 async function loadMap(id){
-  const{data,error}=await db.from('maps').select('*').eq('id',id).single();
+  if(!currentUser){showToast('Faça login para carregar o mapa','error');return;}
+  const{data,error}=await db.from('maps').select('*').eq('id',id).eq('user_id',currentUser.id).single();
   if(error){showToast('Erro ao carregar','error');return;}
   nodes=data.nodes||[];edges=data.edges||[];nextId=data.next_id||(nodes.length+1);
   pan={x:data.pan_x||300,y:data.pan_y||200};currentMapId=id;selectedId=null;
@@ -689,16 +721,17 @@ async function loadMap(id){
   showToast('Mapa carregado');
 }
 async function deleteMap(id){
-  if(currentUser){
-    await db.from('maps').delete().eq('id',id).eq('user_id',currentUser.id);
-  } else {
-    await db.from('maps').delete().eq('id',id).eq('anon_token',anonToken);
-  }
+  if(!currentUser){showToast('Faça login para excluir o mapa','error');return;}
+  await db.from('maps').delete().eq('id',id).eq('user_id',currentUser.id);
   if(currentMapId===id){currentMapId=null;initNewMap();}
   loadMapsList();showToast('Mapa excluído');
 }
 async function loadMapsList(filter=''){
-  const{data}= currentUser ? await db.from('maps').select('id,title,updated_at,anon_token,user_id').eq('user_id',currentUser.id).order('updated_at',{ascending:false}) : await db.from('maps').select('id,title,updated_at,anon_token,user_id').eq('anon_token',anonToken).order('updated_at',{ascending:false});
+  if(!currentUser){
+    mapsList.innerHTML='<p class="empty-msg">Faça login para ver seus mapas</p>';
+    return;
+  }
+  const{data}=await db.from('maps').select('id,title,updated_at,user_id').eq('user_id',currentUser.id).order('updated_at',{ascending:false});
   mapsList.innerHTML='';
   let items=data||[];
   if(filter) items=items.filter(m=>(m.title||'').toLowerCase().includes(filter));
@@ -707,13 +740,6 @@ async function loadMapsList(filter=''){
     const div=document.createElement('div');
     div.className='map-item'+(m.id===currentMapId?' active':'');
     div.innerHTML=`<i class="fa fa-brain" style="font-size:11px;opacity:0.4;flex-shrink:0"></i><span class="map-name">${m.title||'Sem título'}</span><span class="map-del" title="Excluir">×</span>`;
-    // Show anon badge when map belongs to anon_token (not tied to a user)
-    if(m.anon_token && !m.user_id){
-      const flag = document.createElement('span');
-      flag.className = 'map-flag';
-      flag.textContent = 'Anônimo';
-      div.querySelector('.map-name').after(flag);
-    }
     div.addEventListener('click',e=>{if(e.target.classList.contains('map-del')) return;loadMap(m.id);});
     div.querySelector('.map-del').addEventListener('click',e=>{e.stopPropagation();if(confirm('Excluir este mapa?')) deleteMap(m.id);});
     mapsList.appendChild(div);

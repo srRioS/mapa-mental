@@ -695,20 +695,20 @@ async function saveMap(){
     return;
   }
   const title=mapTitleIn.value.trim()||'Sem título';
-  const payload={
+  const payload = {
     title,
     nodes,
     edges,
-    next_id:nextId,
-    pan_x:pan.x,
-    pan_y:pan.y,
-    node_notes:nodeNotes,
-    node_radius:nodeRadius,
+    next_id: nextId,
+    pan_x: pan.x,
+    pan_y: pan.y,
     user_id: currentUser.id,
   };
-  if(window.nodeRichText !== undefined){
-    payload.node_rich_text = window.nodeRichText;
-  }
+
+  // Only include optional JSON columns if they have content — avoids DB errors
+  if (nodeNotes && Object.keys(nodeNotes).length) payload.node_notes = nodeNotes;
+  if (nodeRadius && Object.keys(nodeRadius).length) payload.node_radius = nodeRadius;
+  if (window.nodeRichText && Object.keys(window.nodeRichText).length) payload.node_rich_text = window.nodeRichText;
 
   if(currentMapId){
     const { error } = await db.from('maps').update({...payload,updated_at:new Date().toISOString()}).eq('id',currentMapId);

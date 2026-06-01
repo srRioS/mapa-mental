@@ -47,6 +47,8 @@ const imgModal    = document.getElementById('img-modal');
 const modalImg    = document.getElementById('modal-img');
 const zoomLabel   = document.getElementById('zoom-label');
 const searchInput = document.getElementById('search-input');
+const actionMenu  = document.getElementById('action-menu');
+const btnActionMenu = document.getElementById('btn-action-menu');
 const noteModal   = document.getElementById('note-modal');
 const noteInput   = document.getElementById('note-input');
 const shareModal  = document.getElementById('share-modal');
@@ -506,7 +508,8 @@ async function uploadImageToNode(file,nodeId){
   if(!currentMapId){showToast('Salve o mapa primeiro!','error');return;}
   showToast('Enviando imagem...');
   const ext=file.name.split('.').pop();
-  const path=`${currentUser.id}/${currentMapId}/${nodeId}_${Date.now()}.${ext}`;
+  const owner = currentUser ? currentUser.id : anonToken;
+  const path = `${owner}/${currentMapId}/${nodeId}_${Date.now()}.${ext}`;
   const{error}=await db.storage.from('node-images').upload(path,file,{upsert:true});
   if(error){showToast('Erro ao enviar','error');console.error(error);return;}
   const{data}=db.storage.from('node-images').getPublicUrl(path);
@@ -622,6 +625,36 @@ document.getElementById('btn-add-child').addEventListener('click',()=>{if(select
 document.getElementById('btn-add-sibling').addEventListener('click',()=>{if(selectedId) addSibling(selectedId);else showToast('Selecione um nó primeiro');});
 document.getElementById('btn-delete-node').addEventListener('click',()=>{if(selectedId) deleteNode(selectedId);else showToast('Selecione um nó primeiro');});
 searchInput.addEventListener('input',()=>loadMapsList(searchInput.value.trim().toLowerCase()));
+
+btnActionMenu.addEventListener('click',e=>{
+  e.stopPropagation();
+  actionMenu.classList.toggle('open');
+});
+actionMenu.addEventListener('click',e=>{
+  const item = e.target.closest('[data-action]');
+  if(!item) return;
+  actionMenu.classList.remove('open');
+  handleActionMenu(item.dataset.action);
+});
+document.addEventListener('click',e=>{
+  if(!actionMenu.contains(e.target) && e.target !== btnActionMenu){
+    actionMenu.classList.remove('open');
+  }
+});
+
+function handleActionMenu(action){
+  switch(action){
+    case 'new': initNewMap(); showToast('Novo mapa criado','ok'); break;
+    case 'save': saveMap(); break;
+    case 'export': document.getElementById('btn-export').click(); break;
+    case 'share': document.getElementById('btn-share').click(); break;
+    case 'theme': document.getElementById('btn-theme').click(); break;
+    case 'addChild': if(selectedId) addChild(selectedId); else showToast('Selecione um nó primeiro'); break;
+    case 'addSibling': if(selectedId) addSibling(selectedId); else showToast('Selecione um nó primeiro'); break;
+    case 'note': if(selectedId){ noteInput.value=nodeNotes[String(selectedId)]||''; noteModal.style.display='flex'; noteModal.dataset.nodeId=selectedId; setTimeout(()=>noteInput.focus(),100);} else showToast('Selecione um nó primeiro'); break;
+    case 'delete': if(selectedId) deleteNode(selectedId); else showToast('Selecione um nó primeiro'); break;
+  }
+}
 
 // ── SAVE / LOAD ───────────────────────────────
 async function saveMap(){

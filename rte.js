@@ -29,7 +29,10 @@ function openRTE(nodeId) {
   updateStats();
 }
 
-function closeRTE(apply) {
+document.getElementById('rte-save').addEventListener('click',   async () => { await closeRTE(true); });
+document.getElementById('rte-cancel').addEventListener('click', () => closeRTE(false));
+
+async function closeRTE(apply) {
   if (apply && rteNodeId != null) {
     const title = rteTitleIn.value.trim();
     const n = nodes.find(x => x.id === rteNodeId);
@@ -41,33 +44,11 @@ function closeRTE(apply) {
       attachments: (nodeRichText[String(rteNodeId)] || {}).attachments || [],
     };
     render();
-    showToast('Conteúdo aplicado ✓', 'ok');
+    await saveMap();
+    showToast('Conteúdo salvo ✓', 'ok');
   }
   rteModal.classList.remove('open');
   linkDialog.classList.remove('open');
-}
-
-document.getElementById('rte-save').addEventListener('click',   () => closeRTE(true));
-document.getElementById('rte-save-format').addEventListener('click', async () => { await saveTextFormatting(); });
-document.getElementById('rte-cancel').addEventListener('click', () => closeRTE(false));
-
-async function saveTextFormatting() {
-  if (rteNodeId == null) { return; }
-  const title = rteTitleIn.value.trim();
-  const n = nodes.find(x => x.id === rteNodeId);
-  if (n && title) n.text = title;
-  nodeRichText[String(rteNodeId)] = {
-    html: rteEditor.innerHTML,
-    title,
-    attachments: (nodeRichText[String(rteNodeId)] || {}).attachments || [],
-  };
-  render();
-  if (!currentMapId) {
-    showToast('Salve o mapa primeiro para persistir','error');
-    return;
-  }
-  await saveMap();
-  showToast('Formatação salva ✓','ok');
 }
 
 // Close on overlay click

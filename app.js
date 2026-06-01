@@ -695,24 +695,54 @@ async function saveMap(){
     return;
   }
   const title=mapTitleIn.value.trim()||'Sem título';
-  const payload={title,nodes,edges,next_id:nextId,pan_x:pan.x,pan_y:pan.y,node_notes:nodeNotes,node_radius:nodeRadius,user_id: currentUser.id};
+  const payload={
+    title,
+    nodes,
+    edges,
+    next_id:nextId,
+    pan_x:pan.x,
+    pan_y:pan.y,
+    node_notes:nodeNotes,
+    node_radius:nodeRadius,
+    user_id: currentUser.id,
+  };
+  if(window.nodeRichText !== undefined){
+    payload.node_rich_text = window.nodeRichText;
+  }
+
   if(currentMapId){
-    const { error } = await db.from('maps').update({...payload,updated_at:new Date().toISOString()}).eq('id',currentMapId).eq('user_id',currentUser.id);
-    if(error){showToast('Erro ao salvar','error');console.error(error);return;}
+    const { error } = await db.from('maps').update({...payload,updated_at:new Date().toISOString()}).eq('id',currentMapId);
+    if(error){
+      const msg = error.message || error.details || JSON.stringify(error);
+      showToast('Erro ao salvar: '+msg,'error');
+      console.error('saveMap update error', error);
+      return;
+    }
   } else {
     const{data,error}=await db.from('maps').insert(payload).select().single();
-    if(error){showToast('Erro ao salvar','error');console.error(error);return;}
+    if(error){
+      const msg = error.message || error.details || JSON.stringify(error);
+      showToast('Erro ao salvar: '+msg,'error');
+      console.error('saveMap insert error', error);
+      return;
+    }
     currentMapId=data.id;
   }
   showToast('Mapa salvo ✓','ok');loadMapsList();
 }
 async function loadMap(id){
   if(!currentUser){showToast('Faça login para carregar o mapa','error');return;}
-  const{data,error}=await db.from('maps').select('*').eq('id',id).eq('user_id',currentUser.id).single();
+  const{data,error}=await db.from('maps').select('*').eq('id',id).single();
   if(error){showToast('Erro ao carregar','error');return;}
   nodes=data.nodes||[];edges=data.edges||[];nextId=data.next_id||(nodes.length+1);
   pan={x:data.pan_x||300,y:data.pan_y||200};currentMapId=id;selectedId=null;
   mapTitleIn.value=data.title||'';nodeNotes=data.node_notes||{};nodeRadius=data.node_radius||{};
+  const richTextData = data.node_rich_text || {};
+  if (window.nodeRichText !== undefined) {
+    Object.assign(window.nodeRichText, richTextData);
+  } else {
+    window.nodeRichText = richTextData;
+  }
   nodeImages={};
   const{data:imgs}=await db.from('node_images').select('*').eq('map_id',id);
   if(imgs) imgs.forEach(img=>{nodeImages[img.node_id]=img.url;});
@@ -722,7 +752,7 @@ async function loadMap(id){
 }
 async function deleteMap(id){
   if(!currentUser){showToast('Faça login para excluir o mapa','error');return;}
-  await db.from('maps').delete().eq('id',id).eq('user_id',currentUser.id);
+  await db.from('maps').delete().eq('id',id);
   if(currentMapId===id){currentMapId=null;initNewMap();}
   loadMapsList();showToast('Mapa excluído');
 }
@@ -731,7 +761,7 @@ async function loadMapsList(filter=''){
     mapsList.innerHTML='<p class="empty-msg">Faça login para ver seus mapas</p>';
     return;
   }
-  const{data}=await db.from('maps').select('id,title,updated_at,user_id').eq('user_id',currentUser.id).order('updated_at',{ascending:false});
+  const{data}=await db.from('maps').select('id,title,updated_at,user_id').order('updated_at',{ascending:false});
   mapsList.innerHTML='';
   let items=data||[];
   if(filter) items=items.filter(m=>(m.title||'').toLowerCase().includes(filter));
@@ -751,6 +781,7 @@ function initNewMap(){
   nodes.push(makeNode(-70,-20,'Ideia Central',null,0));rebuildEdges();render();
 }
 document.getElementById('btn-save').addEventListener('click',saveMap);
+document.getElementById('btn-save-all')?.addEventListener('click',saveMap);
 document.getElementById('btn-new-map').addEventListener('click',()=>{initNewMap();showToast('Novo mapa criado');});
 
 // ── KEYBOARD ──────────────────────────────────
@@ -786,27 +817,6 @@ window.render = function() {
       if (window.openRTE) openRTE(id);
     }, { once: false });
   });
-};
-
-// Save/load nodeRichText with map
-const _origSave = saveMap;
-window.saveMap = async function() {
-  // Inject richText into payload via monkey-patch
-  const _origInsert = db.from.bind(db);
-  await _origSave();
-  // Also save richText separately in maps table via update
-  if (currentMapId && window.nodeRichText) {
-    await db.from('maps').update({ node_rich_text: window.nodeRichText }).eq('id', currentMapId);
-  }
-};
-
-const _origLoad = loadMap;
-window.loadMap = async function(id) {
-  await _origLoad(id);
-  const { data } = await db.from('maps').select('node_rich_text').eq('id', id).single();
-  if (data?.node_rich_text && window.nodeRichText !== undefined) {
-    Object.assign(window.nodeRichText, data.node_rich_text);
-  }
 };
 
 // Show rich text badge on nodes that have content

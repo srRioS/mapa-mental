@@ -252,7 +252,7 @@ async function handleAttachment(file) {
   showToast('Enviando arquivo...');
   if(!currentUser){ showToast('Faça login para anexar arquivos','error'); return; }
   const ext  = file.name.split('.').pop();
-  const path = `${currentUser.id}/${currentMapId}/attach_${Date.now()}.${ext}`;
+  const path = `${currentMapId}/attach_${Date.now()}.${ext}`;
   const { error } = await db.storage.from('node-images').upload(path, file, { upsert: true });
   if (error) { showToast('Erro ao enviar', 'error'); return; }
   const { data } = db.storage.from('node-images').getPublicUrl(path);

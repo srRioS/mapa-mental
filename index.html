@@ -67,7 +67,7 @@
       <span class="section-label">Meus Mapas</span>
       <div id="maps-list"><p class="empty-msg">Nenhum mapa ainda</p></div>
     </div>
-    <a href="admin.html" class="admin-link"><i class="fa fa-shield-halved"></i> Painel Admin</a>
+    <!-- admin panel removed: all users can access all maps -->
   </aside>
 
   <main id="main">
@@ -77,6 +77,7 @@
       <input id="map-title-input" type="text" placeholder="Nome do mapa..." maxlength="60"/>
       <div class="topbar-actions">
         <button id="btn-save" class="btn primary"><i class="fa fa-floppy-disk"></i><span class="btn-label"> Salvar</span></button>
+        <button id="btn-save-all" class="btn primary big-save" title="Salvar tudo"><i class="fa fa-floppy-disk"></i><span class="btn-label"> Salvar tudo</span></button>
         <button id="btn-add-child" class="btn"><i class="fa fa-circle-nodes"></i><span class="btn-label"> Filho</span></button>
         <button id="btn-add-sibling" class="btn"><i class="fa fa-code-branch"></i><span class="btn-label"> Irmão</span></button>
         <button id="btn-node-size" class="btn-icon" title="Tamanho do nó"><i class="fa fa-expand-arrows-alt"></i></button>

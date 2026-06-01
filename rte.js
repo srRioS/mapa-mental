@@ -25,7 +25,12 @@ function openRTE(nodeId) {
   renderAttachments(data.attachments || []);
 
   rteModal.classList.add('open');
-  setTimeout(() => rteEditor.focus(), 80);
+  setTimeout(() => { 
+    rteEditor.focus();
+    if (rteEditor.innerHTML === '') {
+      rteEditor.click();
+    }
+  }, 100);
   updateStats();
 }
 

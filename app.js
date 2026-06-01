@@ -354,13 +354,13 @@ function addChild(parentId){
   const siblings=nodes.filter(n=>n.parentId===parentId);
   const ci=(p.colorIdx+1+siblings.length)%COLORS.length;
   const child=makeNode(p.x+p.w+80,p.y+siblings.length*62,'Nova ideia',parentId,ci);
-  nodes.push(child);rebuildEdges();selectedId=child.id;render();if(window.openRTE) openRTE(child.id);
+  nodes.push(child);rebuildEdges();selectedId=child.id;render();if(window.openRTE) { setTimeout(() => openRTE(child.id), 100); }
 }
 function addSibling(id){
   const n=nodes.find(x=>x.id===id);if(!n) return;
   const ci=(n.colorIdx+2)%COLORS.length;
   const sib=makeNode(n.x,n.y+62,'Nova ideia',n.parentId,ci);
-  nodes.push(sib);rebuildEdges();selectedId=sib.id;render();if(window.openRTE) openRTE(sib.id);
+  nodes.push(sib);rebuildEdges();selectedId=sib.id;render();if(window.openRTE) { setTimeout(() => openRTE(sib.id), 100); }
 }
 function deleteNode(id){
   if(nodes.length<=1){showToast('Não é possível excluir o único nó');return;}
@@ -796,7 +796,6 @@ function initNewMap(){
   mapTitleIn.value='';pan={x:300,y:200};zoom=1;zoomLabel.textContent='100%';
   nodes.push(makeNode(-70,-20,'Ideia Central',null,0));rebuildEdges();render();
 }
-document.getElementById('btn-save').addEventListener('click',saveMap);
 document.getElementById('btn-save-all')?.addEventListener('click',saveMap);
 document.getElementById('btn-new-map').addEventListener('click',()=>{initNewMap();showToast('Novo mapa criado');});
 

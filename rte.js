@@ -44,8 +44,8 @@ async function closeRTE(apply) {
       attachments: (nodeRichText[String(rteNodeId)] || {}).attachments || [],
     };
     render();
-    await saveMap();
-    showToast('Conteúdo salvo ✓', 'ok');
+    const saved = await saveMap();
+    if (saved) showToast('Conteúdo salvo ✓', 'ok');
   }
   rteModal.classList.remove('open');
   linkDialog.classList.remove('open');

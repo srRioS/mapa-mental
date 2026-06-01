@@ -727,7 +727,7 @@ async function saveMap(){
       const msg = error.message || error.details || JSON.stringify(error);
       showToast('Erro ao salvar: '+msg,'error');
       console.error('saveMap update error', error);
-      return;
+      return false;
     }
   } else {
     const{data,error}=await db.from('maps').insert(payload).select().single();
@@ -735,11 +735,13 @@ async function saveMap(){
       const msg = error.message || error.details || JSON.stringify(error);
       showToast('Erro ao salvar: '+msg,'error');
       console.error('saveMap insert error', error);
-      return;
+      return false;
     }
     currentMapId=data.id;
   }
-  showToast('Mapa salvo ✓','ok');loadMapsList();
+  showToast('Mapa salvo ✓','ok');
+  loadMapsList();
+  return true;
 }
 async function loadMap(id){
   if(!currentUser){showToast('Faça login para carregar o mapa','error');return;}

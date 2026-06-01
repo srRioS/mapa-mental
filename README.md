@@ -1,46 +1,36 @@
-# 🧠 Mapa Mental Online
+Instruções para aplicar a migration SQL no Supabase
 
-Sistema de mapas mentais com banco de dados e imagens, usando Supabase + Vercel.
+Arquivo de migration: add_maps_json_columns.sql
 
-## ✅ Funcionalidades
-- Criar, editar e excluir mapas mentais
-- Adicionar imagens aos nós
-- Salvar automaticamente no banco de dados
-- Zoom e pan no canvas
-- Menu de contexto com botão direito
-- Atalhos de teclado
+Passos rápidos (Supabase console):
 
-## ⌨️ Atalhos
-| Tecla | Ação |
-|---|---|
-| Tab | Adicionar nó filho |
-| Delete | Excluir nó selecionado |
-| F2 | Editar texto do nó |
-| Ctrl+S | Salvar mapa |
-| Duplo clique | Editar texto do nó |
-| Botão direito | Menu de opções |
+1. Entre no seu projeto Supabase e abra o `SQL Editor`.
+2. Crie uma nova query e cole o conteúdo de `migrations/add_maps_json_columns.sql`.
+3. Clique em `Run` para executar. Deve retornar sucesso sem erros.
 
-## 🚀 Como publicar na Vercel
+Verificações:
 
-### Passo 1 — Criar conta no GitHub
-1. Acesse https://github.com e crie uma conta gratuita
+- Verifique se as colunas foram adicionadas:
 
-### Passo 2 — Criar repositório
-1. Clique em **+** → **New repository**
-2. Nome: `mapa-mental`
-3. Deixe **Public**
-4. Clique em **Create repository**
+```sql
+SELECT column_name
+FROM information_schema.columns
+WHERE table_schema = 'public' AND table_name = 'maps'
+  AND column_name IN ('node_radius','node_notes','node_rich_text');
+```
 
-### Passo 3 — Enviar os arquivos
-Na página do repositório criado, clique em **uploading an existing file** e envie:
-- `index.html`
-- `style.css`
-- `app.js`
-- `config.js`
+Testando a aplicação:
 
-### Passo 4 — Publicar na Vercel
-1. Acesse https://vercel.com e entre com GitHub
-2. Clique em **Add New Project**
-3. Selecione o repositório `mapa-mental`
-4. Clique em **Deploy**
-5. Pronto! Você receberá um link público do tipo `mapa-mental.vercel.app`
+1. Abra o app (index.html) no navegador (assegure que `config.js` tenha as credenciais do Supabase corretas).
+2. Faça login com um usuário existente.
+3. Crie/abra um mapa e clique em `Salvar` ou `Salvar tudo`.
+4. Se ocorrer erro, abra o console do navegador — mensagens de erro do Supabase agora aparecem no toast e no `console.error`.
+
+Observações:
+
+- A migration adiciona colunas JSONB com valor padrão `{}`.
+- Se preferir, execute o SQL manualmente linha a linha no SQL Editor.
+
+Contatos / próxima etapa:
+
+Se quiser, eu crio um `README.md` na raiz com instruções gerais do projeto ou um arquivo `migrations/rollback.sql` para reverter a alteração.

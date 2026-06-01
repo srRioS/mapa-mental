@@ -167,6 +167,16 @@ db.auth.onAuthStateChange(async(event,session)=>{
   }
 });
 
+function handleShareParam(){
+  const params = new URLSearchParams(window.location.search);
+  const shareId = params.get('share');
+  if(shareId){
+    loadMap(shareId).then(()=>{
+      window.history.replaceState({}, document.title, window.location.pathname);
+    });
+  }
+}
+
 function initApp(){
   const loginScreen = document.getElementById('login-screen');
   const appScreen = document.getElementById('app');
@@ -180,6 +190,7 @@ function initApp(){
   av.textContent=(currentUser.email||'U')[0].toUpperCase();
   av.title=`${currentUser.email} — clique para sair`;
   loadMapsList();
+  handleShareParam();
 }
 
 initAuth();
@@ -711,7 +722,7 @@ async function saveMap(){
   if (window.nodeRichText && Object.keys(window.nodeRichText).length) payload.node_rich_text = window.nodeRichText;
 
   if(currentMapId){
-    const { error } = await db.from('maps').update({...payload,updated_at:new Date().toISOString()}).eq('id',currentMapId);
+    const { error } = await db.from('maps').update({...payload,updated_at:new Date().toISOString()}).eq('id',currentMapId).eq('user_id',currentUser.id);
     if(error){
       const msg = error.message || error.details || JSON.stringify(error);
       showToast('Erro ao salvar: '+msg,'error');
@@ -732,8 +743,11 @@ async function saveMap(){
 }
 async function loadMap(id){
   if(!currentUser){showToast('Faça login para carregar o mapa','error');return;}
-  const{data,error}=await db.from('maps').select('*').eq('id',id).single();
-  if(error){showToast('Erro ao carregar','error');return;}
+  const{data,error}=await db.from('maps').select('*').eq('id',id).eq('user_id',currentUser.id).single();
+  if(error || !data){
+    showToast('Mapa não encontrado ou não pertence a você','error');
+    return;
+  }
   nodes=data.nodes||[];edges=data.edges||[];nextId=data.next_id||(nodes.length+1);
   pan={x:data.pan_x||300,y:data.pan_y||200};currentMapId=id;selectedId=null;
   mapTitleIn.value=data.title||'';nodeNotes=data.node_notes||{};nodeRadius=data.node_radius||{};
@@ -752,7 +766,7 @@ async function loadMap(id){
 }
 async function deleteMap(id){
   if(!currentUser){showToast('Faça login para excluir o mapa','error');return;}
-  await db.from('maps').delete().eq('id',id);
+  await db.from('maps').delete().eq('id',id).eq('user_id',currentUser.id);
   if(currentMapId===id){currentMapId=null;initNewMap();}
   loadMapsList();showToast('Mapa excluído');
 }
@@ -761,7 +775,7 @@ async function loadMapsList(filter=''){
     mapsList.innerHTML='<p class="empty-msg">Faça login para ver seus mapas</p>';
     return;
   }
-  const{data}=await db.from('maps').select('id,title,updated_at,user_id').order('updated_at',{ascending:false});
+  const{data}=await db.from('maps').select('id,title,updated_at,user_id').eq('user_id',currentUser.id).order('updated_at',{ascending:false});
   mapsList.innerHTML='';
   let items=data||[];
   if(filter) items=items.filter(m=>(m.title||'').toLowerCase().includes(filter));

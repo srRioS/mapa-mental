@@ -322,7 +322,7 @@ function render(){
 
     g.addEventListener('mousedown',e=>{e.stopPropagation();onNodeMouseDown(e,n.id);});
     g.addEventListener('contextmenu',e=>{e.preventDefault();e.stopPropagation();selectNode(n.id);showCtxMenu(e.clientX,e.clientY);});
-    g.addEventListener('dblclick',e=>{e.stopPropagation();startEdit(n.id);});
+    g.addEventListener('dblclick',e=>{e.stopPropagation();if (window.openRTE) openRTE(n.id);});
     // Touch long-press for context menu
     let longPressT;
     g.addEventListener('touchstart',e=>{
@@ -354,13 +354,13 @@ function addChild(parentId){
   const siblings=nodes.filter(n=>n.parentId===parentId);
   const ci=(p.colorIdx+1+siblings.length)%COLORS.length;
   const child=makeNode(p.x+p.w+80,p.y+siblings.length*62,'Nova ideia',parentId,ci);
-  nodes.push(child);rebuildEdges();selectedId=child.id;render();startEdit(child.id);
+  nodes.push(child);rebuildEdges();selectedId=child.id;render();if(window.openRTE) openRTE(child.id);
 }
 function addSibling(id){
   const n=nodes.find(x=>x.id===id);if(!n) return;
   const ci=(n.colorIdx+2)%COLORS.length;
   const sib=makeNode(n.x,n.y+62,'Nova ideia',n.parentId,ci);
-  nodes.push(sib);rebuildEdges();selectedId=sib.id;render();startEdit(sib.id);
+  nodes.push(sib);rebuildEdges();selectedId=sib.id;render();if(window.openRTE) openRTE(sib.id);
 }
 function deleteNode(id){
   if(nodes.length<=1){showToast('Não é possível excluir o único nó');return;}
@@ -483,7 +483,7 @@ function showCtxMenu(cx,cy){
   ctxMenu.style.left=x+'px';ctxMenu.style.top=y+'px';ctxMenu.style.display='block';
 }
 document.addEventListener('click',()=>ctxMenu.style.display='none');
-document.getElementById('cm-edit').addEventListener('click',()=>{if(selectedId) startEdit(selectedId);});
+document.getElementById('cm-edit').addEventListener('click',()=>{if(selectedId && window.openRTE) openRTE(selectedId);});
 document.getElementById('cm-child').addEventListener('click',()=>{if(selectedId) addChild(selectedId);});
 document.getElementById('cm-sibling').addEventListener('click',()=>{if(selectedId) addSibling(selectedId);});
 document.getElementById('cm-del').addEventListener('click',()=>{if(selectedId) deleteNode(selectedId);});
@@ -804,7 +804,7 @@ window.addEventListener('keydown',e=>{
   if(e.key==='Delete'||e.key==='Backspace'){if(selectedId) deleteNode(selectedId);}
   if(e.key==='Tab'){e.preventDefault();if(selectedId) addChild(selectedId);}
   if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();saveMap();}
-  if(e.key==='F2'){if(selectedId) startEdit(selectedId);}
+  if(e.key==='F2'){if(selectedId && window.openRTE) openRTE(selectedId);}
   if(e.key==='Escape'){selectedId=null;sizePanelEl.classList.remove('open');render();}
 });
 
@@ -813,11 +813,6 @@ window.addEventListener('keydown',e=>{
 // We patch the dblclick inside render() via a flag
 window._rteReady = false;
 document.addEventListener('DOMContentLoaded', () => { window._rteReady = true; });
-
-// cm-rte context menu
-document.getElementById('cm-rte').addEventListener('click', () => {
-  if (selectedId != null && window.openRTE) openRTE(selectedId);
-});
 
 // Patch node dblclick to open RTE
 const _origRender = render;
